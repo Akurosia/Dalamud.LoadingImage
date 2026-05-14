@@ -31,6 +31,7 @@ namespace Dalamud.LoadingImage
         private ExcelSheet<ContentFinderCondition> cfcs;
 
         private bool hasLoading = false;
+        private bool showUi = false;
 
         private int height = 1080;
         private int width = 1920;
@@ -67,9 +68,9 @@ namespace Dalamud.LoadingImage
 
             this.handleTerriChangeHook.Enable();
 
-            #if DEBUG
             this._pi.UiBuilder.Draw += UiBuilderOnOnBuildUi;
-            #endif
+            this._pi.UiBuilder.OpenMainUi += OpenMainUi;
+            this._pi.UiBuilder.OpenConfigUi += OpenConfigUi;
 
             framework.Update += FrameworkOnOnUpdateEvent;
         }
@@ -143,8 +144,16 @@ namespace Dalamud.LoadingImage
 
         private void UiBuilderOnOnBuildUi()
         {
-            if (ImGui.Begin("Location test"))
+            if (!this.showUi)
+                return;
+
+            if (ImGui.Begin("Fancy Loading Screens", ref this.showUi))
             {
+                ImGui.TextWrapped("Shows the destination zone's concept art while loading.");
+                ImGui.TextWrapped("There are no settings to configure.");
+
+                #if DEBUG
+                ImGui.Separator();
                 ImGui.InputInt("W", ref this.width);
                 ImGui.InputInt("H", ref this.height);
                 ImGui.InputFloat("SX", ref this.scaleX);
@@ -152,9 +161,20 @@ namespace Dalamud.LoadingImage
                 ImGui.InputFloat("X", ref this.X);
                 ImGui.InputFloat("Y", ref this.Y);
                 ImGui.Checkbox("hasLoading", ref this.hasLoading);
+                #endif
 
                 ImGui.End();
             }
+        }
+
+        private void OpenMainUi()
+        {
+            this.showUi = true;
+        }
+
+        private void OpenConfigUi()
+        {
+            this.showUi = true;
         }
 
         private void FrameworkOnOnUpdateEvent(IFramework framework)
@@ -233,11 +253,11 @@ namespace Dalamud.LoadingImage
         public void Dispose()
         {
             this.handleTerriChangeHook.Dispose();
+            this._addonLifecycle.UnregisterListener(AddonEvent.PreDraw, "_LocationTitle", this.LocationTitleOnDraw);
             _framework.Update -= FrameworkOnOnUpdateEvent;
-
-            #if DEBUG
             this._pi.UiBuilder.Draw -= UiBuilderOnOnBuildUi;
-            #endif
+            this._pi.UiBuilder.OpenMainUi -= OpenMainUi;
+            this._pi.UiBuilder.OpenConfigUi -= OpenConfigUi;
         }
     }
 }
